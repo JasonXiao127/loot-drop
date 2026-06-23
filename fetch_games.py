@@ -3,7 +3,8 @@ import json
 
 def fetch_free_games():
     # Epic's internal public endpoint for store promotions
-    url = "https://store-site-backend-ecomm-static.ak.epicgames.com/freeGamesPromotions"
+    
+    url = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions"
     
     response = requests.get(url)
     if response.status_code != 200:
