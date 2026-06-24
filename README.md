@@ -1,4 +1,4 @@
-#  Epic Games Freebie Tracker
+#  Loop Drop
 
 **Live Site:** [jasonxiao127.github.io/epic-games-free-games](https://jasonxiao127.github.io/epic-games-free-games/)
 
