@@ -1,6 +1,6 @@
 #  Loop Drop - The Epic Games Free Game Tracker 
 
-**Live Site:** [jasonxiao127.github.io/epic-games-free-games](https://jasonxiao127.github.io/epic-games-free-games/)
+**Live Site:** [jasonxiao127.github.io/loot-drop/](https://jasonxiao127.github.io/loot-drop/)
 
 Update:
   Epic games has finally woken up and now has a 12 month roadmap to fix their craptastic launcher. Hurray!? 
