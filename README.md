@@ -21,7 +21,7 @@ There is a static web page that displays json file that is updated weekly by git
 ##  Tech Stack
 * **Frontend:** HTML5, CSS3, Vanilla JavaScript
 * **Backend/Data:** Python (Requests)
-* **CI/CD:** GitHub Actions
+* **Continous Deployment:** GitHub Actions
 * **Hosting:** GitHub Pages
 
 ---
