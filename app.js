@@ -5,7 +5,8 @@
 (() => {
     "use strict";
 
-    const JSON_URL = 'games.json';
+    // Cache-busting query so browsers/CDN never serve a stale copy of the data.
+    const JSON_URL = 'games.json?v=' + Date.now();
     const container = document.getElementById('games-container');
 
     /**
