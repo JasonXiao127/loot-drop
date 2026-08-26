@@ -48,6 +48,21 @@
     };
 
     /**
+     * Escapes characters that would break out of HTML/attribute contexts,
+     * since card fields originate from an external API payload.
+     * @param {*} value
+     * @returns {string}
+     */
+    const escapeHtml = (value) => {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    };
+
+    /**
      * Calculates time remaining and returns formatted message and status structure.
      * @param {string} dateString 
      * @returns {{ displayText: string, isEndingSoon: boolean, isExpired: boolean }}
@@ -91,7 +106,10 @@
     const renderGames = (games) => {
         container.innerHTML = '';
 
-        if (!games || games.length === 0) {
+        // Drop offers that already lapsed so the UI never advertises dead deals.
+        const liveGames = (games || []).filter(game => game && !calculateTimeRemaining(game.expiryDate).isExpired);
+
+        if (liveGames.length === 0) {
             container.innerHTML = `
                 <div class="error-container">
                     <p class="error-title">No free games currently available</p>
@@ -101,13 +119,14 @@
             return;
         }
 
-        games.forEach(game => {
+        liveGames.forEach(game => {
             const { title, description, image, expiryDate } = game;
             const timeStatus = calculateTimeRemaining(expiryDate);
-            const truncatedDesc = truncateText(description, 100);
-            
+            const safeTitle = escapeHtml(title);
+            const truncatedDesc = escapeHtml(truncateText(description, 100));
+
             // Build direct external link to browse the Epic Store library for the item
-            const queryParam = encodeURIComponent(title);
+            const queryParam = encodeURIComponent(title ?? '');
             const epicStoreUrl = `https://store.epicgames.com/en-US/browse?q=${queryParam}`;
 
             const card = document.createElement('a');
@@ -115,20 +134,23 @@
             card.target = '_blank';
             card.rel = 'noopener noreferrer';
             card.className = 'game-card-link';
+            if (expiryDate) {
+                card.dataset.expiry = expiryDate;
+            }
             card.setAttribute('aria-label', `Claim ${title} on Epic Games Store. ${timeStatus.displayText}`);
 
             card.innerHTML = `
                 <article class="game-card">
                     <div class="image-wrapper">
-                        ${timeStatus.isEndingSoon && !timeStatus.isExpired ? '<span class="urgency-badge">Ending Soon!</span>' : ''}
-                        <img class="game-image" src="${image}" alt="${title}" loading="lazy" onerror="this.onerror=null; this.src='https://placehold.co/600x338/202020/aaaaaa?text=Image+Unavailable';">
+                        ${timeStatus.isEndingSoon ? '<span class="urgency-badge">Ending Soon!</span>' : ''}
+                        <img class="game-image" src="${escapeHtml(image)}" alt="${safeTitle}" loading="lazy" onerror="this.onerror=null; this.src='https://placehold.co/600x338/202020/aaaaaa?text=Image+Unavailable';">
                     </div>
                     <div class="card-content">
-                        <h2 class="game-title">${title}</h2>
+                        <h2 class="game-title">${safeTitle}</h2>
                         <p class="game-desc">${truncatedDesc}</p>
                         <div class="card-footer">
                             <span class="timer-label">Free Now</span>
-                            <span class="timer-value ${timeStatus.isEndingSoon && !timeStatus.isExpired ? 'ending-soon' : ''}">
+                            <span class="timer-value ${timeStatus.isEndingSoon ? 'ending-soon' : ''}">
                                 ${timeStatus.displayText}
                             </span>
                         </div>
@@ -137,6 +159,32 @@
             `;
 
             container.appendChild(card);
+        });
+    };
+
+    /**
+     * Refreshes countdown labels on rendered cards so timers stay live,
+     * removing any card whose offer lapses while the page is open.
+     */
+    const updateTimers = () => {
+        container.querySelectorAll('[data-expiry]').forEach(card => {
+            const timeStatus = calculateTimeRemaining(card.dataset.expiry);
+
+            if (timeStatus.isExpired) {
+                card.remove();
+                return;
+            }
+
+            const timerValue = card.querySelector('.timer-value');
+            const badge = card.querySelector('.urgency-badge');
+
+            if (timerValue) {
+                timerValue.textContent = timeStatus.displayText;
+                timerValue.classList.toggle('ending-soon', timeStatus.isEndingSoon);
+            }
+            if (badge) {
+                badge.hidden = !timeStatus.isEndingSoon;
+            }
         });
     };
 
@@ -179,6 +227,10 @@
         }
     };
 
-    // Begin loader logic when elements are ready
-    document.addEventListener('DOMContentLoaded', init);
+    // Begin loader logic when elements are ready, then keep countdowns ticking.
+    // The interval is registered exactly once so retry clicks never stack timers.
+    document.addEventListener('DOMContentLoaded', () => {
+        init();
+        setInterval(updateTimers, 60 * 1000);
+    });
 })();
